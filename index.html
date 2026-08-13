@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>クビアカツヤカミキリ被害マップ</title>
+
+https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+
+<style>
+
+body{
+  margin:0;
+  font-family:sans-serif;
+}
+
+h1{
+  margin:0;
+  padding:10px;
+  background:#c62828;
+  color:white;
+  text-align:center;
+}
+
+#map{
+  height:92vh;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>
+岐阜県 クビアカツヤカミキリ被害マップ
+</h1>
+
+<div id="map"></div>
+
+https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
+
+<script>
+
+const map = L.map('map').setView(
+  [35.4217,136.7606],
+  12
+);
+
+L.tileLayer(
+  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    attribution:'© OpenStreetMap'
+  }
+).addTo(map);
+
+L.marker(
+  [35.4217,136.7606]
+).addTo(map)
+.bindPopup(
+  '各務原市役所（サンプル地点）'
+);
+
+</script>
+
+</body>
+</html>
