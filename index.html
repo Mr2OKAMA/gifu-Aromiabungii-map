@@ -89,19 +89,19 @@ const legend = L.control({ position: 'bottomright' });
 legend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
     div.innerHTML = `
-        <div class="legend-title">被害程度</div>
+        <div class="legend-title">分類</div>
         <div><span class="color-box" style="background:red;"></span>重度</div>
         <div><span class="color-box" style="background:orange;"></span>中程度</div>
         <div><span class="color-box" style="background:yellow;"></span>軽微</div>
-        <div><span class="color-box" style="background:green;"></span>疑い・調査中</div>
+        <div><span class="color-box" style="background:green;"></span>要注意</div>
     `;
     return div;
 };
 
 legend.addTo(map);
 
-function getColor(damage){
-    switch(damage){
+function getColor(severity){
+    switch(severity){
         case '軽微':
             return 'yellow';
         case '中程度':
@@ -132,7 +132,8 @@ fetch('./data/damage-data.json')
                 return;
             }
 
-            const color = getColor(item.damage);
+            const severity = item.severity || item.damage || '要注意';
+            const color = getColor(severity);
 
             const marker = L.circleMarker([lat, lng], {
                 radius: 8,
@@ -146,7 +147,10 @@ fetch('./data/damage-data.json')
 
             let popupHtml = `
                 <b>樹種：</b>${item.species || '-'}<br>
-                <b>被害：</b>${item.damage || '-'}<br>
+                <b>分類：</b>${severity || '-'}<br>
+                <b>フラス：</b>${item.frass || '-'}<br>
+                <b>脱出食痕：</b>${item.exit_hole || '-'}<br>
+                <b>駆除数：</b>${item.removal_count || '-'}<br>
                 <b>発見日：</b>${item.date || '-'}<br>
             `;
 
