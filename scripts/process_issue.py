@@ -36,6 +36,7 @@ entry["species"] = data.get("樹種", "")
 entry["frass"] = data.get("フラス", "")
 entry["exit_hole"] = data.get("脱出食痕", "")
 entry["removal_count"] = data.get("駆除数", "")
+entry["removal_count_note"] = data.get("駆除数補足", "")
 entry["severity"] = data.get("分類", data.get("被害", ""))
 entry["damage"] = entry["severity"]
 entry["memo"] = data.get("備考", "")
