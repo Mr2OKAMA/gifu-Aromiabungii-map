@@ -1,0 +1,40 @@
+name: issue-to-json
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Run processing script
+        env:
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/process_issue.py "$GITHUB_EVENT_PATH"
+
+      - name: Commit & Push (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git status --porcelain | grep data/damage-data.json; then
+            git add data/damage-data.json
+            git commit -m "Update damage-data.json from issue #${{ github.event.issue.number }}"
+            git push origin HEAD
+          else
+            echo "No changes to commit"
+          fi
