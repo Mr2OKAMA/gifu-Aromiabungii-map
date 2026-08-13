@@ -1,1 +1,17 @@
+name: Update Map
 
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Issue Info
+        run: |
+          echo "${{ github.event.issue.body }}"
