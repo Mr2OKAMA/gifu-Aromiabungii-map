@@ -43,6 +43,14 @@ entry["memo"] = data.get("備考", "")
 entry["photo"] = data.get("写真URL", "")
 entry["address"] = data.get("住所", "")
 
+photo_source = entry["photo"]
+if photo_source.startswith("file:"):
+    entry["photo_file"] = photo_source.replace("file:", "", 1)
+    entry["photo_url"] = ""
+else:
+    entry["photo_file"] = ""
+    entry["photo_url"] = photo_source
+
 lat = data.get("緯度", "")
 lng = data.get("経度", "")
 
