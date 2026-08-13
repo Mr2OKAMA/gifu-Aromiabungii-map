@@ -4,27 +4,60 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>クビアカツヤカミキリ被害マップ</title>
+<title>岐阜県クビアカツヤカミキリ被害マップ</title>
 
-https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
-
-<style>
-
-body{
-  margin:0;
-  font-family:sans-serif;
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/ont-family:sans-serif;
 }
 
-h1{
-  margin:0;
-  padding:10px;
-  background:#c62828;
-  color:white;
-  text-align:center;
+header{
+    background:#c62828;
+    color:white;
+    text-align:center;
+    padding:12px;
+}
+
+header h1{
+    margin:0;
+    font-size:1.4rem;
+}
+
+header p{
+    margin:5px 0 0 0;
+    font-size:0.9rem;
 }
 
 #map{
-  height:92vh;
+    height:calc(100vh - 80px);
+}
+
+.legend{
+    background:white;
+    padding:10px;
+    border-radius:5px;
+    box-shadow:0 0 5px rgba(0,0,0,0.3);
+    line-height:1.6;
+}
+
+.legend-title{
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+.color-box{
+    display:inline-block;
+    width:12px;
+    height:12px;
+    margin-right:5px;
+}
+
+.popup-image{
+    width:220px;
+    max-width:100%;
+    margin-top:8px;
+    border-radius:4px;
 }
 
 </style>
@@ -32,34 +65,155 @@ h1{
 
 <body>
 
-<h1>
-岐阜県 クビアカツヤカミキリ被害マップ
-</h1>
+<header>
+    <h1>岐阜県 クビアカツヤカミキリ被害マップ</h1>
+    <p>市民・自治体協働による被害状況共有システム</p>
+</header>
 
 <div id="map"></div>
 
-https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
+let@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
+// ========================
+// 地図初期設定
+// ========================
+
 const map = L.map('map').setView(
-  [35.4217,136.7606],
-  12
+    [35.4217,136.7606],
+    12
 );
 
 L.tileLayer(
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    attribution:'© OpenStreetMap'
-  }
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+        maxZoom:19,
+        attribution:'© OpenStreetMap contributors'
+    }
 ).addTo(map);
 
-L.marker(
-  [35.4217,136.7606]
-).addTo(map)
-.bindPopup(
-  '各務原市役所（サンプル地点）'
-);
+// ========================
+// 凡例
+// ========================
+
+const legend = L.control({
+    position:'bottomright'
+});
+
+legend.onAdd = function () {
+
+    const div = L.DomUtil.create('div','legend');
+
+    div.innerHTML = `
+        <div class="legend-title">被害程度</div>
+
+        <div>
+          <span class="color-box" style="background:red;"></span>
+          重度
+        </div>
+
+        <div>
+          <span class="color-box" style="background:orange;"></span>
+          中程度
+        </div>
+
+        <div>
+          <span class="color-box" style="background:yellow;"></span>
+          軽微
+        </div>
+
+        <div>
+          <span class="color-box" style="background:green;"></span>
+          疑い・調査中
+        </div>
+    `;
+
+    return div;
+};
+
+legend.addTo(map);
+
+// ========================
+// 被害データ読込
+// ========================
+
+fetch('./data/damage-data.json')
+
+.then(response => response.json())
+
+.then(data => {
+
+    data.forEach(item => {
+
+        let color = "green";
+
+        switch(item.damage){
+
+            case "軽微":
+                color = "yellow";
+                break;
+
+            case "中程度":
+                color = "orange";
+                break;
+
+            case "重度":
+                color = "red";
+                break;
+        }
+
+        const marker = L.circleMarker(
+            [item.lat, item.lng],
+            {
+                radius:8,
+                color:color,
+                fillColor:color,
+                fillOpacity:0.8,
+                weight:2
+            }
+        ).addTo(map);
+
+        let popupHtml = `
+            <b>樹種：</b>${item.species || "-"}<br>
+            <b>被害：</b>${item.damage || "-"}<br>
+            <b>発見日：</b>${item.date || "-"}<br>
+        `;
+
+        if(item.address){
+            popupHtml += `
+            <b>場所：</b>${item.address}<br>
+            `;
+        }
+
+        if(item.memo){
+            popupHtml += `
+            <b>備考：</b>${item.memo}<br>
+            `;
+        }
+
+        if(item.photo){
+
+            popupHtml += `
+            ${item.photo}
+            `;
+        }
+
+        marker.bindPopup(popupHtml);
+
+    });
+
+})
+
+.catch(error => {
+
+    console.error(error);
+
+    alert(
+      "damage-data.json の読み込みに失敗しました。"
+    );
+
+});
 
 </script>
 
