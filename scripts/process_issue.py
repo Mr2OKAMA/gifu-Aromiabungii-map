@@ -2,7 +2,15 @@
 import sys
 import json
 import os
+import re
 from datetime import datetime
+
+GIFU_MUNICIPALITIES = [
+    '岐阜市','大垣市','高山市','多治見市','関市','中津川市','美濃市','瑞浪市','羽島市','恵那市',
+    '美濃加茂市','土岐市','各務原市','可児市','山県市','瑞穂市','飛騨市','本巣市','郡上市','下呂市','海津市',
+    '岐南町','笠松町','養老町','垂井町','関ケ原町','神戸町','輪之内町','安八町','揖斐川町','大野町','池田町',
+    '北方町','坂祝町','富加町','川辺町','七宗町','八百津町','白川町','東白川村','御嵩町','白川村'
+]
 
 if len(sys.argv) < 2:
     print("Missing event path arg")
@@ -23,6 +31,14 @@ for line in body.splitlines():
         k, v = line.split(":", 1)
         data[k.strip()] = v.strip()
 
+def extract_municipality(address):
+    if not address:
+        return ""
+    for muni in GIFU_MUNICIPALITIES:
+        if muni in address:
+            return muni
+    return ""
+
 entry = {}
 
 if data.get("発見日"):
@@ -41,7 +57,7 @@ entry["severity"] = data.get("分類", data.get("被害", ""))
 entry["damage"] = entry["severity"]
 entry["memo"] = data.get("備考", "")
 entry["address"] = data.get("住所", "")
-entry["municipality"] = data.get("市町村", "")
+entry["municipality"] = extract_municipality(entry["address"])
 
 photo_source = data.get("写真URL", "")
 if photo_source.startswith("file:"):
