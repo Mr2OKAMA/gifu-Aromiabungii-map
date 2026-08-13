@@ -36,7 +36,11 @@ button{
 }
 
 small.error{color:#b00020;display:none}
-
+.checkbox-list{display:grid;gap:8px;margin-top:8px}
+.checkbox-item{display:flex;align-items:flex-start;gap:8px}
+.checkbox-item input{width:auto;margin-top:3px}
+.helper{font-size:13px;color:#666;margin-top:6px}
+.summary-box{background:#f6f6f6;padding:10px;border-radius:6px;margin-top:8px;font-size:14px}
 @media (max-width:480px){
   body{padding:12px;margin:0}
   h1{font-size:20px}
@@ -68,12 +72,17 @@ small.error{color:#b00020;display:none}
 </div>
 
 <div class="field">
-<label>被害程度</label>
-<select id="damage">
-  <option>軽微</option>
-  <option>中程度</option>
-  <option>重度</option>
-</select>
+<label>症状・確認項目</label>
+<div class="checkbox-list">
+  <label class="checkbox-item"><input type="checkbox" id="frass"> フラスの有無</label>
+  <label class="checkbox-item"><input type="checkbox" id="exitHole"> 脱出食痕の有無</label>
+</div>
+<div class="helper">※複数選択可</div>
+</div>
+
+<div class="field">
+<label>駆除数（自由記載）</label>
+<input id="removalCount" placeholder="例: 3頭、10本の木で確認 など">
 </div>
 
 <div class="field">
@@ -94,6 +103,7 @@ small.error{color:#b00020;display:none}
 <div class="field">
 <label>備考</label>
 <textarea id="memo" rows="4"></textarea>
+<div class="summary-box" id="severityPreview">分類: -</div>
 </div>
 
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
@@ -119,12 +129,35 @@ small.error{color:#b00020;display:none}
 })();
 
 const errEl = document.getElementById('error');
+const previewEl = document.getElementById('severityPreview');
+const frassEl = document.getElementById('frass');
+const exitHoleEl = document.getElementById('exitHole');
+const removalCountEl = document.getElementById('removalCount');
 
 function showError(msg){
   errEl.textContent = msg;
   errEl.style.display = 'block';
   setTimeout(() => errEl.style.display = 'none', 6000);
 }
+
+function classifySeverity(){
+  const signals = [frassEl.checked, exitHoleEl.checked].filter(Boolean).length;
+  const hasRemoval = removalCountEl.value.trim().length > 0;
+
+  let severity = '要注意';
+  if (signals >= 2) severity = '重度';
+  else if (signals === 1 && hasRemoval) severity = '中程度';
+  else if (signals === 1 || hasRemoval) severity = '軽微';
+
+  previewEl.textContent = `分類: ${severity}`;
+  return severity;
+}
+
+[frassEl, exitHoleEl, removalCountEl].forEach(el => {
+  el.addEventListener('change', classifySeverity);
+  el.addEventListener('input', classifySeverity);
+});
+classifySeverity();
 
 document.getElementById('locBtn').addEventListener('click', () => {
   if (!navigator.geolocation) {
@@ -152,16 +185,18 @@ document.getElementById('locBtn').addEventListener('click', () => {
 
 function createIssue(){
   const species = document.getElementById('species').value.trim();
-  const damage = document.getElementById('damage').value.trim();
   const lat = document.getElementById('lat').value.trim();
   const lng = document.getElementById('lng').value.trim();
   const memo = document.getElementById('memo').value.trim();
   const photo = document.getElementById('photo').value.trim();
   const date = document.getElementById('date').value;
+  const frass = frassEl.checked ? 'あり' : 'なし';
+  const exitHole = exitHoleEl.checked ? 'あり' : 'なし';
+  const removalCount = removalCountEl.value.trim();
+  const severity = classifySeverity();
 
   if (!date) { showError('発見日を入力してください'); return; }
   if (!species) { showError('樹種を入力してください'); return; }
-  if (!damage) { showError('被害程度を入力してください'); return; }
 
   if (lat && (isNaN(Number(lat)) || Number(lat) < -90 || Number(lat) > 90)) {
     showError('緯度の値が正しくありません');
@@ -177,7 +212,13 @@ function createIssue(){
 
 樹種:${species}
 
-被害:${damage}
+フラス:${frass}
+
+脱出食痕:${exitHole}
+
+駆除数:${removalCount}
+
+分類:${severity}
 
 緯度:${lat}
 
