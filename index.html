@@ -62,6 +62,15 @@ header p{
     border-radius:4px;
     display:block;
 }
+
+.control-note{
+    background:white;
+    padding:8px 10px;
+    border-radius:5px;
+    box-shadow:0 0 5px rgba(0,0,0,0.3);
+    font-size:13px;
+    line-height:1.5;
+}
 </style>
 </head>
 
@@ -75,17 +84,25 @@ header p{
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
 const map = L.map('map').setView([35.4217, 136.7606], 12);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-const legend = L.control({ position: 'bottomright' });
+const baseLayers = {
+    'OpenStreetMap': osm
+};
 
+const markerLayer = L.layerGroup().addTo(map);
+const heatLayer = L.layerGroup();
+let heatmap = null;
+
+const legend = L.control({ position: 'bottomright' });
 legend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
     div.innerHTML = `
@@ -97,8 +114,14 @@ legend.onAdd = function () {
     `;
     return div;
 };
-
 legend.addTo(map);
+
+const overlays = {
+    '被害地点': markerLayer,
+    '駆除数ヒートマップ': heatLayer
+};
+
+L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
 function getColor(severity){
     switch(severity){
@@ -113,6 +136,22 @@ function getColor(severity){
     }
 }
 
+function parseRemovalCount(value){
+    const text = String(value || '').trim();
+    if (!text) return null;
+    const m = text.match(/\d+(?:\.\d+)?/);
+    if (!m) return null;
+    return Number(m[0]);
+}
+
+function getHeatIntensity(count){
+    if (count >= 11) return 1.0;
+    if (count >= 6) return 0.8;
+    if (count >= 2) return 0.55;
+    if (count >= 1) return 0.35;
+    return 0.2;
+}
+
 fetch('./data/damage-data.json')
     .then(response => {
         if (!response.ok) {
@@ -122,6 +161,7 @@ fetch('./data/damage-data.json')
     })
     .then(data => {
         const markers = [];
+        const heatPoints = [];
 
         data.forEach(item => {
             const lat = Number(item.lat);
@@ -141,34 +181,45 @@ fetch('./data/damage-data.json')
                 fillColor: color,
                 fillOpacity: 0.85,
                 weight: 2
-            }).addTo(map);
+            });
 
-            markers.push(marker);
-
-            let popupHtml = `
+            const popupHtml = `
                 <b>樹種：</b>${item.species || '-'}<br>
                 <b>分類：</b>${severity || '-'}<br>
                 <b>フラス：</b>${item.frass || '-'}<br>
                 <b>脱出食痕：</b>${item.exit_hole || '-'}<br>
                 <b>駆除数：</b>${item.removal_count || '-'}<br>
                 <b>発見日：</b>${item.date || '-'}<br>
+                ${item.address ? `<b>場所：</b>${item.address}<br>` : ''}
+                ${item.memo ? `<b>備考：</b>${item.memo}<br>` : ''}
+                ${item.photo ? `<a href="${item.photo}" target="_blank" rel="noopener noreferrer">写真を開く</a><br><img class="popup-image" src="${item.photo}" alt="被害写真">` : ''}
             `;
 
-            if (item.address) {
-                popupHtml += `<b>場所：</b>${item.address}<br>`;
-            }
-
-            if (item.memo) {
-                popupHtml += `<b>備考：</b>${item.memo}<br>`;
-            }
-
-            if (item.photo) {
-                popupHtml += `<a href="${item.photo}" target="_blank" rel="noopener noreferrer">写真を開く</a><br>`;
-                popupHtml += `<img class="popup-image" src="${item.photo}" alt="被害写真">`;
-            }
-
             marker.bindPopup(popupHtml);
+            marker.addTo(markerLayer);
+            markers.push(marker);
+
+            const count = parseRemovalCount(item.removal_count);
+            if (count !== null) {
+                heatPoints.push([lat, lng, getHeatIntensity(count)]);
+            }
         });
+
+        if (heatPoints.length > 0) {
+            heatmap = L.heatLayer(heatPoints, {
+                radius: 30,
+                blur: 20,
+                maxZoom: 17,
+                minOpacity: 0.35,
+                gradient: {
+                    0.2: '#2dc937',
+                    0.45: '#e7b416',
+                    0.7: '#f87c00',
+                    1.0: '#cc3232'
+                }
+            });
+            heatmap.addTo(heatLayer);
+        }
 
         if (markers.length > 0) {
             const group = L.featureGroup(markers);
