@@ -74,8 +74,18 @@ function getHeatIntensity(count){
 }
 function extractMunicipality(address){
     if (!address) return '不明';
-    const m = String(address).match(/^[^都道府県]*?(?:岐阜市|大垣市|高山市|多治見市|関市|中津川市|美濃市|瑞浪市|羽島市|恵那市|美濃加茂市|土岐市|各務原市|可児市|山県市|瑞穂市|飛騨市|本巣市|郡上市|下呂市|海津市|岐南町|笠松町|養老町|垂井町|関ケ原町|神戸町|輪之内町|安八町|揖斐川町|大野町|池田町|北方町|坂祝町|富加町|川辺町|七宗町|八百津町|白川町|東白川村|御嵩町|白川村)/);
-    return m ? m[0] : '不明';
+    const clean = String(address);
+    const patterns = [
+        '岐阜市','大垣市','高山市','多治見市','関市','中津川市','美濃市','瑞浪市','羽島市','恵那市',
+        '美濃加茂市','土岐市','各務原市','可児市','山県市','瑞穂市','飛騨市','本巣市','郡上市','下呂市','海津市',
+        '岐南町','笠松町','養老町','垂井町','関ケ原町','神戸町','輪之内町','安八町','揖斐川町','大野町','池田町',
+        '北方町','坂祝町','富加町','川辺町','七宗町','八百津町','白川町','東白川村','御嵩町','白川村'
+    ];
+    for (const p of patterns) {
+        const idx = clean.indexOf(p);
+        if (idx >= 0) return p;
+    }
+    return '不明';
 }
 function buildMunicipalityPanel(stats){
     const entries = Object.entries(stats).sort((a,b) => b[1] - a[1]);
@@ -112,14 +122,15 @@ fetch('./data/damage-data.json')
                 <b>発見日：</b>${item.date || '-'}<br>
                 ${item.address ? `<b>場所：</b>${item.address}<br>` : ''}
                 ${item.memo ? `<b>備考：</b>${item.memo}<br>` : ''}
-                ${item.photo ? `<a href="${item.photo}" target="_blank" rel="noopener noreferrer">写真を開く</a><br><img class="popup-image" src="${item.photo}" alt="被害写真">` : ''}
+                ${item.photo_url ? `<a href="${item.photo_url}" target="_blank" rel="noopener noreferrer">写真を開く</a><br><img class="popup-image" src="${item.photo_url}" alt="被害写真">` : ''}
+                ${item.photo_file ? `<b>写真ファイル：</b>${item.photo_file}<br>` : ''}
             `;
             marker.bindPopup(popupHtml);
             marker.addTo(markerLayer);
             markers.push(marker);
             const count = parseRemovalCount(item.removal_count);
             if (count !== null) heatPoints.push([lat, lng, getHeatIntensity(count)]);
-            const muni = extractMunicipality(item.address);
+            const muni = item.municipality || extractMunicipality(item.address);
             municipalityStats[muni] = (municipalityStats[muni] || 0) + 1;
         });
         if (heatPoints.length > 0) {
