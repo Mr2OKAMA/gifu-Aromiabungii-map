@@ -7,11 +7,9 @@ on:
 
 jobs:
   test:
-
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Issue Info
+      - name: Show Issue
         run: |
           echo "${{ github.event.issue.body }}"
