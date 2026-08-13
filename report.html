@@ -135,6 +135,12 @@ small.error{color:#b00020;display:none}
 </div>
 
 <div class="field">
+<label>市町村</label>
+<input id="municipality" placeholder="例: 岐阜市">
+<div class="helper">※市町別集計に使います。できるだけ入力してください。</div>
+</div>
+
+<div class="field">
 <label>備考</label>
 <textarea id="memo" rows="4"></textarea>
 <div class="summary-box" id="severityPreview">分類: -</div>
@@ -230,6 +236,7 @@ function createIssue(){
   const species = document.getElementById('species').value.trim();
   const lat = document.getElementById('lat').value.trim();
   const lng = document.getElementById('lng').value.trim();
+  const municipality = document.getElementById('municipality').value.trim();
   const memo = document.getElementById('memo').value.trim();
   const photoUrl = photoUrlEl.value.trim();
   const date = document.getElementById('date').value;
@@ -241,6 +248,7 @@ function createIssue(){
 
   if (!date) { showError('発見日を入力してください'); return; }
   if (!species) { showError('樹種を入力してください'); return; }
+  if (!municipality) { showError('市町村を入力してください'); return; }
 
   if (removalCountValue !== null && removalCountValue < 0) {
     showError('駆除数は0以上で入力してください');
@@ -264,6 +272,8 @@ function createIssue(){
 
 樹種:${species}
 
+市町村:${municipality}
+
 フラス:${frass}
 
 脱出食痕:${exitHole}
@@ -285,7 +295,6 @@ function createIssue(){
   const url = `https://github.com/Mr2OKAMA/gifu-Aromiabungii-map/issues/new?title=被害報告&body=${encodeURIComponent(body)}`;
   window.open(url, '_blank');
 }
-
 </script>
 
 </body>
