@@ -9,99 +9,34 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-body{
-    margin:0;
-    font-family:sans-serif;
-}
-
-header{
-    background:#c62828;
-    color:white;
-    text-align:center;
-    padding:12px;
-}
-
-header h1{
-    margin:0;
-    font-size:1.4rem;
-}
-
-header p{
-    margin:5px 0 0 0;
-    font-size:0.9rem;
-}
-
-#map{
-    height:calc(100vh - 80px);
-}
-
-.legend{
-    background:white;
-    padding:10px;
-    border-radius:5px;
-    box-shadow:0 0 5px rgba(0,0,0,0.3);
-    line-height:1.6;
-}
-
-.legend-title{
-    font-weight:bold;
-    margin-bottom:5px;
-}
-
-.color-box{
-    display:inline-block;
-    width:12px;
-    height:12px;
-    margin-right:5px;
-}
-
-.popup-image{
-    width:220px;
-    max-width:100%;
-    margin-top:8px;
-    border-radius:4px;
-    display:block;
-}
-
-.control-note{
-    background:white;
-    padding:8px 10px;
-    border-radius:5px;
-    box-shadow:0 0 5px rgba(0,0,0,0.3);
-    font-size:13px;
-    line-height:1.5;
-}
+body{margin:0;font-family:sans-serif;}
+header{background:#c62828;color:white;text-align:center;padding:12px;}
+header h1{margin:0;font-size:1.4rem;}
+header p{margin:5px 0 0 0;font-size:0.9rem;}
+#map{height:calc(100vh - 80px);}
+.legend,.panel{background:white;padding:10px;border-radius:5px;box-shadow:0 0 5px rgba(0,0,0,0.3);line-height:1.6;}
+.legend-title,.panel-title{font-weight:bold;margin-bottom:5px;}
+.color-box{display:inline-block;width:12px;height:12px;margin-right:5px;}
+.popup-image{width:220px;max-width:100%;margin-top:8px;border-radius:4px;display:block;}
+.control-note{font-size:13px;line-height:1.5;}
+.count-badge{display:inline-block;min-width:1.8em;padding:0 0.45em;border-radius:999px;background:#eee;text-align:center;font-size:12px;margin-left:6px;}
 </style>
 </head>
-
 <body>
-
 <header>
     <h1>岐阜県 クビアカツヤカミキリ被害マップ</h1>
     <p>市民・自治体協働による被害状況共有システム</p>
 </header>
-
 <div id="map"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
 <script>
 const map = L.map('map').setView([35.4217, 136.7606], 12);
-
-const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
-const baseLayers = {
-    'OpenStreetMap': osm
-};
-
+const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(map);
+const baseLayers = { 'OpenStreetMap': osm };
 const markerLayer = L.layerGroup().addTo(map);
 const heatLayer = L.layerGroup();
 let heatmap = null;
-
 const legend = L.control({ position: 'bottomright' });
 legend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
@@ -115,35 +50,21 @@ legend.onAdd = function () {
     return div;
 };
 legend.addTo(map);
-
-const overlays = {
-    '被害地点': markerLayer,
-    '駆除数ヒートマップ': heatLayer
-};
-
+const overlays = { '被害地点': markerLayer, '駆除数ヒートマップ': heatLayer };
 L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
 function getColor(severity){
     switch(severity){
-        case '軽微':
-            return 'yellow';
-        case '中程度':
-            return 'orange';
-        case '重度':
-            return 'red';
-        default:
-            return 'green';
+        case '軽微': return 'yellow';
+        case '中程度': return 'orange';
+        case '重度': return 'red';
+        default: return 'green';
     }
 }
-
 function parseRemovalCount(value){
-    const text = String(value || '').trim();
-    if (!text) return null;
-    const m = text.match(/\d+(?:\.\d+)?/);
-    if (!m) return null;
-    return Number(m[0]);
+    const n = Number(String(value || '').trim());
+    return Number.isFinite(n) ? n : null;
 }
-
 function getHeatIntensity(count){
     if (count >= 11) return 1.0;
     if (count >= 6) return 0.8;
@@ -151,86 +72,64 @@ function getHeatIntensity(count){
     if (count >= 1) return 0.35;
     return 0.2;
 }
+function extractMunicipality(address){
+    if (!address) return '不明';
+    const m = String(address).match(/^[^都道府県]*?(?:岐阜市|大垣市|高山市|多治見市|関市|中津川市|美濃市|瑞浪市|羽島市|恵那市|美濃加茂市|土岐市|各務原市|可児市|山県市|瑞穂市|飛騨市|本巣市|郡上市|下呂市|海津市|岐南町|笠松町|養老町|垂井町|関ケ原町|神戸町|輪之内町|安八町|揖斐川町|大野町|池田町|北方町|坂祝町|富加町|川辺町|七宗町|八百津町|白川町|東白川村|御嵩町|白川村)/);
+    return m ? m[0] : '不明';
+}
+function buildMunicipalityPanel(stats){
+    const entries = Object.entries(stats).sort((a,b) => b[1] - a[1]);
+    const control = L.control({ position: 'topright' });
+    control.onAdd = function(){
+        const div = L.DomUtil.create('div', 'panel');
+        const rows = entries.length ? entries.map(([name,count]) => `<div>${name}<span class="count-badge">${count}</span></div>`).join('') : '<div>データがありません</div>';
+        div.innerHTML = `<div class="panel-title">市町別集計</div><div class="control-note">${rows}</div>`;
+        return div;
+    };
+    return control;
+}
 
 fetch('./data/damage-data.json')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => { if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); return response.json(); })
     .then(data => {
         const markers = [];
         const heatPoints = [];
-
+        const municipalityStats = {};
         data.forEach(item => {
             const lat = Number(item.lat);
             const lng = Number(item.lng);
-
-            if (Number.isNaN(lat) || Number.isNaN(lng)) {
-                console.warn('Invalid coordinates skipped:', item);
-                return;
-            }
-
+            if (Number.isNaN(lat) || Number.isNaN(lng)) return;
             const severity = item.severity || item.damage || '要注意';
             const color = getColor(severity);
-
-            const marker = L.circleMarker([lat, lng], {
-                radius: 8,
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.85,
-                weight: 2
-            });
-
+            const marker = L.circleMarker([lat, lng], { radius: 8, color, fillColor: color, fillOpacity: 0.85, weight: 2 });
             const popupHtml = `
                 <b>樹種：</b>${item.species || '-'}<br>
                 <b>分類：</b>${severity || '-'}<br>
                 <b>フラス：</b>${item.frass || '-'}<br>
                 <b>脱出食痕：</b>${item.exit_hole || '-'}<br>
                 <b>駆除数：</b>${item.removal_count || '-'}<br>
+                <b>駆除数補足：</b>${item.removal_count_note || '-'}<br>
                 <b>発見日：</b>${item.date || '-'}<br>
                 ${item.address ? `<b>場所：</b>${item.address}<br>` : ''}
                 ${item.memo ? `<b>備考：</b>${item.memo}<br>` : ''}
                 ${item.photo ? `<a href="${item.photo}" target="_blank" rel="noopener noreferrer">写真を開く</a><br><img class="popup-image" src="${item.photo}" alt="被害写真">` : ''}
             `;
-
             marker.bindPopup(popupHtml);
             marker.addTo(markerLayer);
             markers.push(marker);
-
             const count = parseRemovalCount(item.removal_count);
-            if (count !== null) {
-                heatPoints.push([lat, lng, getHeatIntensity(count)]);
-            }
+            if (count !== null) heatPoints.push([lat, lng, getHeatIntensity(count)]);
+            const muni = extractMunicipality(item.address);
+            municipalityStats[muni] = (municipalityStats[muni] || 0) + 1;
         });
-
         if (heatPoints.length > 0) {
-            heatmap = L.heatLayer(heatPoints, {
-                radius: 30,
-                blur: 20,
-                maxZoom: 17,
-                minOpacity: 0.35,
-                gradient: {
-                    0.2: '#2dc937',
-                    0.45: '#e7b416',
-                    0.7: '#f87c00',
-                    1.0: '#cc3232'
-                }
-            });
+            heatmap = L.heatLayer(heatPoints, { radius: 30, blur: 20, maxZoom: 17, minOpacity: 0.35, gradient: { 0.2: '#2dc937', 0.45: '#e7b416', 0.7: '#f87c00', 1.0: '#cc3232' } });
             heatmap.addTo(heatLayer);
         }
-
-        if (markers.length > 0) {
-            const group = L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.15));
-        }
+        if (markers.length > 0) map.fitBounds(L.featureGroup(markers).getBounds().pad(0.15));
+        buildMunicipalityPanel(municipalityStats).addTo(map);
     })
-    .catch(error => {
-        console.error(error);
-        alert('damage-data.json の読み込みに失敗しました。');
-    });
+    .catch(error => { console.error(error); alert('damage-data.json の読み込みに失敗しました。'); });
 </script>
-
 </body>
 </html>
