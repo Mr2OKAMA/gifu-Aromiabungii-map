@@ -6,10 +6,12 @@
 
 <title>岐阜県クビアカツヤカミキリ被害マップ</title>
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/ont-family:sans-serif;
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+body{
+    margin:0;
+    font-family:sans-serif;
 }
 
 header{
@@ -58,8 +60,8 @@ header p{
     max-width:100%;
     margin-top:8px;
     border-radius:4px;
+    display:block;
 }
-
 </style>
 </head>
 
@@ -72,149 +74,107 @@ header p{
 
 <div id="map"></div>
 
-let@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+const map = L.map('map').setView([35.4217, 136.7606], 12);
 
-// ========================
-// 地図初期設定
-// ========================
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-const map = L.map('map').setView(
-    [35.4217,136.7606],
-    12
-);
-
-L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        maxZoom:19,
-        attribution:'© OpenStreetMap contributors'
-    }
-).addTo(map);
-
-// ========================
-// 凡例
-// ========================
-
-const legend = L.control({
-    position:'bottomright'
-});
+const legend = L.control({ position: 'bottomright' });
 
 legend.onAdd = function () {
-
-    const div = L.DomUtil.create('div','legend');
-
+    const div = L.DomUtil.create('div', 'legend');
     div.innerHTML = `
         <div class="legend-title">被害程度</div>
-
-        <div>
-          <span class="color-box" style="background:red;"></span>
-          重度
-        </div>
-
-        <div>
-          <span class="color-box" style="background:orange;"></span>
-          中程度
-        </div>
-
-        <div>
-          <span class="color-box" style="background:yellow;"></span>
-          軽微
-        </div>
-
-        <div>
-          <span class="color-box" style="background:green;"></span>
-          疑い・調査中
-        </div>
+        <div><span class="color-box" style="background:red;"></span>重度</div>
+        <div><span class="color-box" style="background:orange;"></span>中程度</div>
+        <div><span class="color-box" style="background:yellow;"></span>軽微</div>
+        <div><span class="color-box" style="background:green;"></span>疑い・調査中</div>
     `;
-
     return div;
 };
 
 legend.addTo(map);
 
-// ========================
-// 被害データ読込
-// ========================
+function getColor(damage){
+    switch(damage){
+        case '軽微':
+            return 'yellow';
+        case '中程度':
+            return 'orange';
+        case '重度':
+            return 'red';
+        default:
+            return 'green';
+    }
+}
 
 fetch('./data/damage-data.json')
-
-.then(response => response.json())
-
-.then(data => {
-
-    data.forEach(item => {
-
-        let color = "green";
-
-        switch(item.damage){
-
-            case "軽微":
-                color = "yellow";
-                break;
-
-            case "中程度":
-                color = "orange";
-                break;
-
-            case "重度":
-                color = "red";
-                break;
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        return response.json();
+    })
+    .then(data => {
+        const markers = [];
 
-        const marker = L.circleMarker(
-            [item.lat, item.lng],
-            {
-                radius:8,
-                color:color,
-                fillColor:color,
-                fillOpacity:0.8,
-                weight:2
+        data.forEach(item => {
+            const lat = Number(item.lat);
+            const lng = Number(item.lng);
+
+            if (Number.isNaN(lat) || Number.isNaN(lng)) {
+                console.warn('Invalid coordinates skipped:', item);
+                return;
             }
-        ).addTo(map);
 
-        let popupHtml = `
-            <b>樹種：</b>${item.species || "-"}<br>
-            <b>被害：</b>${item.damage || "-"}<br>
-            <b>発見日：</b>${item.date || "-"}<br>
-        `;
+            const color = getColor(item.damage);
 
-        if(item.address){
-            popupHtml += `
-            <b>場所：</b>${item.address}<br>
+            const marker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.85,
+                weight: 2
+            }).addTo(map);
+
+            markers.push(marker);
+
+            let popupHtml = `
+                <b>樹種：</b>${item.species || '-'}<br>
+                <b>被害：</b>${item.damage || '-'}<br>
+                <b>発見日：</b>${item.date || '-'}<br>
             `;
+
+            if (item.address) {
+                popupHtml += `<b>場所：</b>${item.address}<br>`;
+            }
+
+            if (item.memo) {
+                popupHtml += `<b>備考：</b>${item.memo}<br>`;
+            }
+
+            if (item.photo) {
+                popupHtml += `<a href="${item.photo}" target="_blank" rel="noopener noreferrer">写真を開く</a><br>`;
+                popupHtml += `<img class="popup-image" src="${item.photo}" alt="被害写真">`;
+            }
+
+            marker.bindPopup(popupHtml);
+        });
+
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.15));
         }
-
-        if(item.memo){
-            popupHtml += `
-            <b>備考：</b>${item.memo}<br>
-            `;
-        }
-
-        if(item.photo){
-
-            popupHtml += `
-            ${item.photo}
-            `;
-        }
-
-        marker.bindPopup(popupHtml);
-
+    })
+    .catch(error => {
+        console.error(error);
+        alert('damage-data.json の読み込みに失敗しました。');
     });
-
-})
-
-.catch(error => {
-
-    console.error(error);
-
-    alert(
-      "damage-data.json の読み込みに失敗しました。"
-    );
-
-});
-
 </script>
 
 </body>
