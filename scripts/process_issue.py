@@ -40,16 +40,18 @@ entry["removal_count_note"] = data.get("駆除数補足", "")
 entry["severity"] = data.get("分類", data.get("被害", ""))
 entry["damage"] = entry["severity"]
 entry["memo"] = data.get("備考", "")
-entry["photo"] = data.get("写真URL", "")
 entry["address"] = data.get("住所", "")
+entry["municipality"] = data.get("市町村", "")
 
-photo_source = entry["photo"]
+photo_source = data.get("写真URL", "")
 if photo_source.startswith("file:"):
     entry["photo_file"] = photo_source.replace("file:", "", 1)
     entry["photo_url"] = ""
+    entry["photo"] = ""
 else:
     entry["photo_file"] = ""
     entry["photo_url"] = photo_source
+    entry["photo"] = photo_source
 
 lat = data.get("緯度", "")
 lng = data.get("経度", "")
