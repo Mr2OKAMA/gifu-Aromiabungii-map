@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>クビアカツヤカミキリ被害報告</title>
+
+<style>
+
+body{
+    max-width:800px;
+    margin:20px auto;
+    font-family:sans-serif;
+    padding:20px;
+}
+
+input,select,textarea{
+    width:100%;
+    padding:10px;
+    margin-bottom:15px;
+}
+
+button{
+    background:#c62828;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>クビアカツヤカミキリ被害報告</h1>
+
+<form id="reportForm">
+
+<label>樹種</label>
+<select id="species">
+    <option>サクラ</option>
+    <option>モモ</option>
+    <option>ウメ</option>
+    <option>スモモ</option>
+    <option>その他</option>
+</select>
+
+<label>被害程度</label>
+<select id="damage">
+    <option>軽微</option>
+    <option>中程度</option>
+    <option>重度</option>
+</select>
+
+<label>緯度</label>
+<input id="lat">
+
+<label>経度</label>
+<input id="lng">
+
+<label>備考</label>
+<textarea id="memo"></textarea>
+
+<button type="button" onclick="createIssue()">
+GitHubへ報告
+</button>
+
+</form>
+
+<script>
+
+navigator.geolocation.getCurrentPosition(function(pos){
+
+    document.getElementById("lat").value =
+    pos.coords.latitude;
+
+    document.getElementById("lng").value =
+    pos.coords.longitude;
+
+});
+
+function createIssue(){
+
+    const species =
+      document.getElementById("species").value;
+
+    const damage =
+      document.getElementById("damage").value;
+
+    const lat =
+      document.getElementById("lat").value;
+
+    const lng =
+      document.getElementById("lng").value;
+
+    const memo =
+      document.getElementById("memo").value;
+
+    const body =
+`樹種:${species}
+
+被害:${damage}
+
+緯度:${lat}
+
+経度:${lng}
+
+備考:${memo}`;
+
+    const url =
+`https://github.com/Mr2OKAMA/gifu-Aromiabungii-map/issues/new?title=被害報告&body=${encodeURIComponent(body)}`;
+
+    window.open(url);
+
+}
+
+</script>
+
+</body>
+</html>
