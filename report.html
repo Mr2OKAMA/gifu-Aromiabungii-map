@@ -120,6 +120,12 @@ small.error{color:#b00020;display:none}
 </div>
 
 <div class="field">
+<label>住所</label>
+<input id="address" placeholder="例: 岐阜市〇〇町1-2-3">
+<div class="helper">※市町村の自動集計に使います。できるだけ正確に入力してください。</div>
+</div>
+
+<div class="field">
 <label>写真</label>
 <div class="photo-choice">
   <div>
@@ -132,12 +138,6 @@ small.error{color:#b00020;display:none}
   </div>
 </div>
 <div class="helper">※GitHub Issueでは画像そのものの直接添付は難しいため、URLまたはファイル名を記録します。</div>
-</div>
-
-<div class="field">
-<label>市町村</label>
-<input id="municipality" placeholder="例: 岐阜市">
-<div class="helper">※市町別集計に使います。できるだけ入力してください。</div>
 </div>
 
 <div class="field">
@@ -236,7 +236,7 @@ function createIssue(){
   const species = document.getElementById('species').value.trim();
   const lat = document.getElementById('lat').value.trim();
   const lng = document.getElementById('lng').value.trim();
-  const municipality = document.getElementById('municipality').value.trim();
+  const address = document.getElementById('address').value.trim();
   const memo = document.getElementById('memo').value.trim();
   const photoUrl = photoUrlEl.value.trim();
   const date = document.getElementById('date').value;
@@ -248,7 +248,6 @@ function createIssue(){
 
   if (!date) { showError('発見日を入力してください'); return; }
   if (!species) { showError('樹種を入力してください'); return; }
-  if (!municipality) { showError('市町村を入力してください'); return; }
 
   if (removalCountValue !== null && removalCountValue < 0) {
     showError('駆除数は0以上で入力してください');
@@ -272,7 +271,7 @@ function createIssue(){
 
 樹種:${species}
 
-市町村:${municipality}
+住所:${address}
 
 フラス:${frass}
 
