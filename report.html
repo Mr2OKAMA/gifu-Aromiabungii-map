@@ -7,100 +7,175 @@
 <title>クビアカツヤカミキリ被害報告</title>
 
 <style>
-
 body{
-    max-width:800px;
-    margin:20px auto;
-    font-family:sans-serif;
-    padding:20px;
+  max-width:800px;
+  margin:10px auto;
+  font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  padding:16px;
+  box-sizing:border-box;
 }
+label{font-weight:600;display:block;margin-bottom:6px}
+.field{margin-bottom:14px}
 
 input,select,textarea{
-    width:100%;
-    padding:10px;
-    margin-bottom:15px;
+  width:100%;
+  padding:10px;
+  margin-top:4px;
+  box-sizing:border-box;
+  font-size:16px;
 }
 
 button{
-    background:#c62828;
-    color:white;
-    border:none;
-    padding:12px 20px;
-    cursor:pointer;
+  background:#c62828;
+  color:white;
+  border:none;
+  padding:12px 20px;
+  cursor:pointer;
+  font-size:16px;
+  border-radius:6px;
 }
 
-</style>
+small.error{color:#b00020;display:none}
 
+@media (max-width:480px){
+  body{padding:12px;margin:0}
+  h1{font-size:20px}
+  input,select,textarea{font-size:18px}
+}
+</style>
 </head>
 
 <body>
 
 <h1>クビアカツヤカミキリ被害報告</h1>
 
-<form id="reportForm">
+<form id="reportForm" onsubmit="event.preventDefault(); createIssue();">
 
+<div class="field">
+<label>発見日</label>
+<input type="date" id="date">
+</div>
+
+<div class="field">
 <label>樹種</label>
 <select id="species">
-    <option>サクラ</option>
-    <option>モモ</option>
-    <option>ウメ</option>
-    <option>スモモ</option>
-    <option>その他</option>
+  <option>サクラ</option>
+  <option>モモ</option>
+  <option>ウメ</option>
+  <option>スモモ</option>
+  <option>その他</option>
 </select>
+</div>
 
+<div class="field">
 <label>被害程度</label>
 <select id="damage">
-    <option>軽微</option>
-    <option>中程度</option>
-    <option>重度</option>
+  <option>軽微</option>
+  <option>中程度</option>
+  <option>重度</option>
 </select>
+</div>
 
+<div class="field">
 <label>緯度</label>
-<input id="lat">
+<input id="lat" inputmode="decimal" pattern="[0-9.+-]+">
+</div>
 
+<div class="field">
 <label>経度</label>
-<input id="lng">
+<input id="lng" inputmode="decimal" pattern="[0-9.+-]+">
+</div>
 
+<div class="field">
+<label>写真URL (任意)</label>
+<input id="photo" placeholder="https://...">
+</div>
+
+<div class="field">
 <label>備考</label>
-<textarea id="memo"></textarea>
+<textarea id="memo" rows="4"></textarea>
+</div>
 
-<button type="button" onclick="createIssue()">
-GitHubへ報告
-</button>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <button type="submit">GitHubへ報告</button>
+  <button type="button" id="locBtn">現在地を取得</button>
+</div>
+
+<p style="margin-top:12px;font-size:13px;color:#666">
+※報告するとIssueが作成され、管理者が確認して地図へ反映します。
+</p>
 
 </form>
 
+<small class="error" id="error"></small>
+
 <script>
+(function(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  document.getElementById('date').value = `${y}-${m}-${day}`;
+})();
 
-navigator.geolocation.getCurrentPosition(function(pos){
+const errEl = document.getElementById('error');
 
-    document.getElementById("lat").value =
-    pos.coords.latitude;
+function showError(msg){
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+  setTimeout(() => errEl.style.display = 'none', 6000);
+}
 
-    document.getElementById("lng").value =
-    pos.coords.longitude;
+document.getElementById('locBtn').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    showError('このブラウザは位置情報に対応していません');
+    return;
+  }
 
+  const btn = document.getElementById('locBtn');
+  btn.textContent = '取得中...';
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      document.getElementById('lat').value = pos.coords.latitude;
+      document.getElementById('lng').value = pos.coords.longitude;
+      btn.textContent = '現在地を取得';
+    },
+    (err) => {
+      console.error(err);
+      showError('位置情報の取得に失敗しました。位置情報の許可を確認してください。');
+      btn.textContent = '現在地を取得';
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 });
 
 function createIssue(){
+  const species = document.getElementById('species').value.trim();
+  const damage = document.getElementById('damage').value.trim();
+  const lat = document.getElementById('lat').value.trim();
+  const lng = document.getElementById('lng').value.trim();
+  const memo = document.getElementById('memo').value.trim();
+  const photo = document.getElementById('photo').value.trim();
+  const date = document.getElementById('date').value;
 
-    const species =
-      document.getElementById("species").value;
+  if (!date) { showError('発見日を入力してください'); return; }
+  if (!species) { showError('樹種を入力してください'); return; }
+  if (!damage) { showError('被害程度を入力してください'); return; }
 
-    const damage =
-      document.getElementById("damage").value;
+  if (lat && (isNaN(Number(lat)) || Number(lat) < -90 || Number(lat) > 90)) {
+    showError('緯度の値が正しくありません');
+    return;
+  }
+  if (lng && (isNaN(Number(lng)) || Number(lng) < -180 || Number(lng) > 180)) {
+    showError('経度の値が正しくありません');
+    return;
+  }
 
-    const lat =
-      document.getElementById("lat").value;
+  const body =
+`発見日:${date}
 
-    const lng =
-      document.getElementById("lng").value;
-
-    const memo =
-      document.getElementById("memo").value;
-
-    const body =
-`樹種:${species}
+樹種:${species}
 
 被害:${damage}
 
@@ -108,15 +183,24 @@ function createIssue(){
 
 経度:${lng}
 
-備考:${memo}`;
+備考:${memo}
 
-    const url =
-`https://github.com/Mr2OKAMA/gifu-Aromiabungii-map/issues/new?title=被害報告&body=${encodeURIComponent(body)}`;
+写真URL:${photo}`;
 
-    window.open(url);
-
+  const url = `https://github.com/Mr2OKAMA/gifu-Aromiabungii-map/issues/new?title=被害報告&body=${encodeURIComponent(body)}`;
+  window.open(url, '_blank');
 }
 
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      if (!document.getElementById('lat').value) document.getElementById('lat').value = pos.coords.latitude;
+      if (!document.getElementById('lng').value) document.getElementById('lng').value = pos.coords.longitude;
+    },
+    () => {},
+    { timeout: 8000 }
+  );
+}
 </script>
 
 </body>
