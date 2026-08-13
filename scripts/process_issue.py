@@ -33,7 +33,11 @@ else:
     entry["date"] = datetime.utcnow().strftime("%Y-%m-%d")
 
 entry["species"] = data.get("樹種", "")
-entry["damage"] = data.get("被害", "")
+entry["frass"] = data.get("フラス", "")
+entry["exit_hole"] = data.get("脱出食痕", "")
+entry["removal_count"] = data.get("駆除数", "")
+entry["severity"] = data.get("分類", data.get("被害", ""))
+entry["damage"] = entry["severity"]
 entry["memo"] = data.get("備考", "")
 entry["photo"] = data.get("写真URL", "")
 entry["address"] = data.get("住所", "")
