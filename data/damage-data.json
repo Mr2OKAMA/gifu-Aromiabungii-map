@@ -1,1 +1,21 @@
-
+[
+  {
+    "date": "2026-08-13",
+    "species": "サクラ",
+    "frass": "あり",
+    "exit_hole": "あり",
+    "removal_count": "30",
+    "removal_count_note": "",
+    "severity": "重度",
+    "damage": "重度",
+    "memo": "",
+    "address": "各務原市前渡東町",
+    "municipality": "各務原市",
+    "photo_file": "",
+    "photo_url": "",
+    "photo": "",
+    "lat": 35.37943661662344,
+    "lng": 136.87550625045307,
+    "id": 1
+  }
+]
