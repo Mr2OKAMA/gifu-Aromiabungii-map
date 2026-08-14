@@ -66,7 +66,7 @@ small.error{color:#b00020;display:none}
 
 <h1>クビアカツヤカミキリ被害報告</h1>
 
-<form id="reportForm" onsubmit="event.preventDefault(); createIssue();">
+<form id="reportForm" onsubmit="event.preventDefault(); submitReport();">
 
 <div class="field">
 <label>発見日</label>
@@ -137,7 +137,7 @@ small.error{color:#b00020;display:none}
     <input type="file" id="photoFile" accept="image/*">
   </div>
 </div>
-<div class="helper">※GitHub Issueでは画像そのものの直接添付は難しいため、URLまたはファイル名を記録します。</div>
+<div class="helper">※写真URLまたはファイル名を記録します。</div>
 </div>
 
 <div class="field">
@@ -147,11 +147,11 @@ small.error{color:#b00020;display:none}
 </div>
 
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-  <button type="submit">GitHubへ報告</button>
+  <button type="submit" id="submitBtn">送信</button>
 </div>
 
 <p style="margin-top:12px;font-size:13px;color:#666">
-※報告するとIssueが作成され、管理者が確認して地図へ反映します。
+※報告を送信すると管理者が確認して地図へ反映します。
 </p>
 
 </form>
@@ -232,7 +232,7 @@ document.getElementById('locBtn').addEventListener('click', () => {
   );
 });
 
-function createIssue(){
+function submitReport(){
   const species = document.getElementById('species').value.trim();
   const lat = document.getElementById('lat').value.trim();
   const lng = document.getElementById('lng').value.trim();
@@ -266,33 +266,46 @@ function createIssue(){
   const photoFile = photoFileEl.files && photoFileEl.files[0] ? photoFileEl.files[0].name : '';
   const photoSource = photoUrl || (photoFile ? `file:${photoFile}` : '');
 
-  const body =
-`発見日:${date}
+  const payload = {
+    date,
+    species,
+    address,
+    frass,
+    exit_hole: exitHole,
+    removal_count: removalCountValue !== null ? removalCountValue : '',
+    removal_count_note: removalCountNote,
+    severity,
+    lat: lat ? Number(lat) : null,
+    lng: lng ? Number(lng) : null,
+    memo,
+    photo_source: photoSource
+  };
 
-樹種:${species}
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
 
-住所:${address}
-
-フラス:${frass}
-
-脱出食痕:${exitHole}
-
-駆除数:${removalCountValue !== null ? removalCountValue : ''}
-
-駆除数補足:${removalCountNote}
-
-分類:${severity}
-
-緯度:${lat}
-
-経度:${lng}
-
-備考:${memo}
-
-写真URL:${photoSource}`;
-
-  const url = `https://github.com/Mr2OKAMA/gifu-Aromiabungii-map/issues/new?title=被害報告&body=${encodeURIComponent(body)}`;
-  window.open(url, '_blank');
+  fetch('/api/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(text || '送信に失敗しました');
+    }
+    alert('報告を受け付けました。ありがとうございます。');
+    document.getElementById('reportForm').reset();
+    classifySeverity();
+  })
+  .catch((err) => {
+    showError(err.message || '報告に失敗しました。しばらくしてから再度お試しください。');
+  })
+  .finally(() => {
+    btn.disabled = false;
+    btn.textContent = '送信';
+  });
 }
 </script>
 
